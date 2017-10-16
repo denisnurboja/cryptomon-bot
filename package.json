@@ -23,6 +23,8 @@
     },
     "dependencies": {
         "botgram": "^2.0.1",
+        "express": "^4.16.2",
+        "node-telegram-bot-api": "^0.28.0",
         "telebot": "^1.2.3"
     }
 }
