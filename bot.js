@@ -37,6 +37,7 @@ bot.onText(/^\/hello (.+)$/, function(msg, match) {
 
 
 const TeleBot = require('telebot');
+const ccxt = require('ccxt');
 
 const bot = new TeleBot({
     token: process.env.TELEGRAM_TOKEN,
@@ -75,6 +76,12 @@ bot.on('/alarm', (msg) => {
 
 bot.on('/monitor', (msg) => {
     return bot.sendMessage(msg.from.id, '<b>Monitor</b> not implemented yet', { parseMode: 'HTML' });
+});
+
+bot.on('/exchanges', (msg) => {
+    var exc = ccxt.exchanges.join(', ');
+    console.log(exc);
+    return bot.sendMessage(msg.from.id, exc, { parseMode: 'HTML' });
 });
 
 bot.on('/hello', (msg) => {
