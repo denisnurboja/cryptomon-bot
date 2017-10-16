@@ -20,7 +20,7 @@ bot.command((msg, reply) => reply.text("Invalid command."));
 */
 
 
-
+/*
 const TeleBot = require('telebot');
 
 const bot = new TeleBot({
@@ -39,10 +39,10 @@ const bot = new TeleBot({
 bot.on('text', (msg) => msg.reply.text(msg.text));
 
 bot.start();
+*/
 
 
 
-/*
 var Bot = require('node-telegram-bot-api');
 
 bot = new Bot(process.env.TELEGRAM_TOKEN, { polling: true });
@@ -55,4 +55,3 @@ bot.onText(/^\/hello (.+)$/, function(msg, match) {
 });
 
 console.log('Bot server started...');
-*/
