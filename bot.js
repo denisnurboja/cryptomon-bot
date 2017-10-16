@@ -76,8 +76,21 @@ bot.on(['/coins', '/c'], (msg) => {
     return bot.sendMessage(msg.from.id, `<b>Coins:</b> ${ coins }`, { parseMode: 'HTML', replyMarkup });
 });
 
+
+const getMarkets = async (id) => {
+    let exchange = new ccxt[id]();
+    let markets = await exchange.loadMarkets();
+    console.log(exchange.id,  markets);
+    return markets;
+}
+
 bot.on(/^\/exchange (.+)$/, (msg, param) => {
-    const exchange = param.match[1];
+    let id = param.match[1];
+    var exchange = id;
+    let markets = getMarkets(id);
+    var marketList = Object.keys(markets);
+    console.log(marketList);
+    bot.sendMessage(msg.from.id, `<b>Markets:</b> ${ marketList.join(', ') }`, { parseMode: 'HTML' });
     return bot.sendMessage(msg.from.id, `<b>Exchange:</b> ${ exchange }`, { parseMode: 'HTML' });
 });
 
