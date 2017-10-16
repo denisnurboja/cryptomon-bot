@@ -17,6 +17,10 @@
         "url": "https://github.com/jchristov/cryptomon-bot/issues"
     },
     "homepage": "https://github.com/jchristov/cryptomon-bot#readme",
+    "engines": {
+        "node": "8.7.0",
+        "npm": "5.5.1"
+    },
     "dependencies": {
         "botgram": "^2.0.1"
     }
