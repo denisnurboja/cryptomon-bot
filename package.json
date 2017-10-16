@@ -1,0 +1,22 @@
+{
+  "name": "cryptomon-bot",
+  "version": "1.0.0",
+  "description": "Cryptocurrency Monitoring Chatbot",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jchristov/cryptomon-bot.git"
+  },
+  "author": "Julian Christov",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jchristov/cryptomon-bot/issues"
+  },
+  "homepage": "https://github.com/jchristov/cryptomon-bot#readme",
+  "dependencies": {
+    "botgram": "^2.0.1"
+  }
+}
