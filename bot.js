@@ -29,9 +29,9 @@ bot.on(['/start'], (msg) => {
     //    ['/alarm', '/monitor', '/help']
     //], { resize: true, once: false });
     const replyMarkup = bot.inlineKeyboard([
-        [ bot.inlineButton('💱 Exchanges', {callback: '/exchanges'}), bot.inlineButton('💲 Coins', {callback: '/coins'}) ],
-        [ bot.inlineButton('⏰ Alarm', {callback: '/alarm'}), bot.inlineButton('📢 Signal', {callback: '/signal'}) ],
-        [ bot.inlineButton('ℹ️ Help', {callback: '/help'}), bot.inlineButton('❓ About', {callback: '/about'}) ]
+        [bot.inlineButton('💱 Exchanges', { callback: '/exchanges' }), bot.inlineButton('💲 Coins', { callback: '/coins' })],
+        [bot.inlineButton('⏰ Alarm', { callback: '/alarm' }), bot.inlineButton('📢 Signal', { callback: '/signal' })],
+        [bot.inlineButton('ℹ️ Help', { callback: '/help' }), bot.inlineButton('❓ About', { callback: '/about' })]
     ]);
     bot.sendMessage(msg.from.id, '<b>Available commands:</b>', { parseMode: 'HTML', replyMarkup });
     return bot.sendMessage(msg.from.id, `Hi, <b>${ msg.from.first_name }</b>!`, { parseMode: 'HTML' });
@@ -55,20 +55,23 @@ bot.on(['/signal', '/s'], (msg) => {
 });
 
 bot.on(['/exchanges', '/e'], (msg) => {
+    let buttons = [];
+    //console.log(ccxt.exchanges);
+    //ccxt.exchanges.foreach((id) => { console.log(id); });
     const replyMarkup = bot.inlineKeyboard([
-        [ bot.inlineButton('Bittrex', {callback: '/exchange bittrex'}), bot.inlineButton('Bitfinex', {callback: '/exchange bitfinex'}) ],
-        [ bot.inlineButton('Binance', {callback: '/exchange binance'}), bot.inlineButton('GDAX', {callback: '/exchange gdax'}) ]
+        [bot.inlineButton('Bittrex', { callback: '/exchange bittrex' }), bot.inlineButton('Bitfinex', { callback: '/exchange bitfinex' })],
+        [bot.inlineButton('Binance', { callback: '/exchange binance' }), bot.inlineButton('GDAX', { callback: '/exchange gdax' })]
     ]);
     //var exc = ccxt.exchanges.join(', ');
-    var exc = '';
+    //var exc = ccxt.getExchanges(['b']);
     //console.log(exc);
-    return bot.sendMessage(msg.from.id, `<b>Exchanges:</b> ${ exc }`, { parseMode: 'HTML', replyMarkup });
+    return bot.sendMessage(msg.from.id, `<b>Exchanges</b>`, { parseMode: 'HTML', replyMarkup });
 });
 
 bot.on(['/coins', '/c'], (msg) => {
     const replyMarkup = bot.inlineKeyboard([
-        [ bot.inlineButton('Bitcoin', {callback: '/coin BTC'}), bot.inlineButton('Ethereum', {callback: '/coin ETH'}) ],
-        [ bot.inlineButton('Dash', {callback: '/coin DASH'}), bot.inlineButton('NEO', {callback: '/coin NEO'}) ]
+        [bot.inlineButton('Bitcoin', { callback: '/coin BTC' }), bot.inlineButton('Ethereum', { callback: '/coin ETH' })],
+        [bot.inlineButton('Dash', { callback: '/coin DASH' }), bot.inlineButton('NEO', { callback: '/coin NEO' })]
     ]);
     //var exc = ccxt.exchanges.join(', ');
     //console.log(exc);
@@ -77,21 +80,22 @@ bot.on(['/coins', '/c'], (msg) => {
 });
 
 
-const getMarkets = async (id) => {
-    let exchange = new ccxt[id]();
-    let markets = await exchange.loadMarkets();
-    console.log(exchange.id,  markets);
-    return markets;
-}
-
 bot.on(/^\/exchange (.+)$/, (msg, param) => {
     let id = param.match[1];
+    /*
     var exchange = id;
-    let markets = getMarkets(id);
-    var marketList = Object.keys(markets);
-    console.log(marketList);
+    let markets = ccxt.getExchange(id).getMarkets();
+    */
+    let exchange = ccxt[id]();
+    exchange.loadMarkets();
+    let markets = exchange.markets;
+    let marketList = Object.keys(markets);
+    //console.log(marketList);
+    bot.sendMessage(msg.from.id, `<b>Exchange:</b> ${ exchange.name }`, { parseMode: 'HTML' });
     bot.sendMessage(msg.from.id, `<b>Markets:</b> ${ marketList.join(', ') }`, { parseMode: 'HTML' });
-    return bot.sendMessage(msg.from.id, `<b>Exchange:</b> ${ exchange }`, { parseMode: 'HTML' });
+    // bot.sendMessage(msg.from.id, `<b>Symbols:</b> ${ exchange.symbols.join(', ') }`, { parseMode: 'HTML' });
+    bot.sendMessage(msg.from.id, `<b>Currencies:</b> ${ exchange.currencies.join(', ') }`, { parseMode: 'HTML' });
+    return;
 });
 
 bot.on(/^\/coin (.+)$/, (msg, param) => {
