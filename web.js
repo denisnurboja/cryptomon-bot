@@ -1,5 +1,9 @@
-const express = require('express');
+'use strict';
+// Resources:
+//    https://medium.com/@Abazhenov/using-async-await-in-express-with-node-8-b8af872c0016
+
 const packageInfo = require('./package.json');
+const express = require('express');
 const ccxt = require('ccxt');
 const log = require('ololog').configure({ locate: false });
 require('ansicolor').nice;
@@ -16,6 +20,7 @@ process.on('unhandledRejection', e => {
     //process.exit(1);
 });
 
+
 let sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 
@@ -30,65 +35,68 @@ app.get('/exchanges', function(req, res) {
 
 app.get('/exchanges/:exchangeId', function(req, res) {
     let exchangeId = req.params.exchangeId;
-    let exchange = new ccxt[exchangeId]();
+    let exchange = ccxt[exchangeId]();
     res.json(exchange);
 });
 
-app.get('/exchanges/:exchangeId/markets', function(req, res) {
+app.get('/exchanges/:exchangeId/markets', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = new ccxt[exchangeId]();
-    exchange.loadMarkets();
+    let exchange = ccxt[exchangeId]();
+    await exchange.loadMarkets();
+    //log.blue(await exchange.fetchTicker('BTC/USD'));
+    //log.green(exchange.markets);
     res.json(exchange.markets);
 });
 
-app.get('/exchanges/:exchangeId/markets/:marketId', function(req, res) {
+app.get('/exchanges/:exchangeId/markets/:marketId', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = new ccxt[exchangeId]();
+    let exchange = ccxt[exchangeId]();
     let marketId = req.params.marketId;
-    exchange.loadMarkets();
+    await exchange.loadMarkets();
     let market = exchange.marketsById().find(marketId);
     res.json(market);
 });
 
-app.get('/exchanges/:exchangeId/symbols', function(req, res) {
+app.get('/exchanges/:exchangeId/symbols', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = new ccxt[exchangeId]();
-    exchange.loadMarkets();
+    let exchange = ccxt[exchangeId]();
+    await exchange.loadMarkets();
     res.json(exchange.symbols);
 });
 
-app.get('/exchanges/:exchangeId/currencies', function(req, res) {
+app.get('/exchanges/:exchangeId/currencies', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = new ccxt[exchangeId]();
-    exchange.loadMarkets();
+    let exchange = ccxt[exchangeId]();
+    await exchange.loadMarkets();
     res.json(exchange.currencies);
 });
 
-app.get('/exchanges/:exchangeId/ids', function(req, res) {
+app.get('/exchanges/:exchangeId/ids', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = new ccxt[exchangeId]();
-    exchange.loadMarkets();
+    let exchange = ccxt[exchangeId]();
+    await exchange.loadMarkets();
     res.json(exchange.ids);
 });
 
-app.get('/exchanges/:exchangeId/tickers', function(req, res) {
+app.get('/exchanges/:exchangeId/tickers', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = new ccxt[exchangeId]();
-    exchange.loadMarkets();
+    let exchange = ccxt[exchangeId]();
+    await exchange.loadMarkets();
+    //let tickers = exchange.fetchTickers(); // Not implemented yet!
     let tickers = [];
     for (let symbol of exchange.symbols) {
         sleep(exchange.rateLimit);
-        tickers.push(exchange.fetchTicker(symbol));
+        tickers.push(await exchange.fetchTicker(symbol));
     }
     res.json(tickers);
 });
 
-app.get('/exchanges/:exchangeId/tickers/:symbolId', function(req, res) {
+app.get('/exchanges/:exchangeId/tickers/:symbolId', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = new ccxt[exchangeId]();
+    let exchange = ccxt[exchangeId]();
     let symbolId = req.params.symbolId;
-    exchange.loadMarkets();
-    let ticker = exchange.fetchTicker(symbolId);
+    await exchange.loadMarkets();
+    let ticker = await exchange.fetchTicker(symbolId);
     res.json(ticker);
 });
 

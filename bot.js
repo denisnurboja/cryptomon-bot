@@ -1,3 +1,4 @@
+'use strict';
 // Resources:
 //    https://github.com/botgram/botgram
 //    https://tutorials.botsfloor.com/creating-a-bot-using-the-telegram-bot-api-5d3caed3266d
@@ -6,9 +7,21 @@
 //    http://qpbp.name/tutorials/2016/07/13/deploying-telegram-bot-to-heroku.html
 //    https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json
 //    http://www.unicode.org/emoji/charts/full-emoji-list.html
+//    https://www.npmjs.com/package/tgfancy
 
 const TeleBot = require('telebot');
 const ccxt = require('ccxt');
+const log = require('ololog').configure({ locate: false });
+require('ansicolor').nice;
+
+
+process.on('uncaughtException', e => {
+    log.bright.red.error(e);
+});
+process.on('unhandledRejection', e => {
+    log.bright.red.error(e);
+});
+
 
 const bot = new TeleBot({
     token: process.env.TELEGRAM_TOKEN,
@@ -24,17 +37,23 @@ const bot = new TeleBot({
 });
 
 bot.on(['/start'], (msg) => {
-    // Command keyboard
-    //const replyMarkup = bot.keyboard([
-    //    ['/alarm', '/monitor', '/help']
-    //], { resize: true, once: false });
+    /*  
+        // Command keyboard
+        const replyMarkup = bot.keyboard([
+            // ['/alarm', '/monitor', '/help']
+            [bot.button('/settings', 'Settings'), bot.button('/help', 'Help'), bot.button('/about', 'About')]
+        ], { resize: true, once: false });
+    */
     const replyMarkup = bot.inlineKeyboard([
-        [bot.inlineButton('💱 Exchanges', { callback: '/exchanges' }), bot.inlineButton('💲 Coins', { callback: '/coins' })],
-        [bot.inlineButton('⏰ Alarm', { callback: '/alarm' }), bot.inlineButton('📢 Signal', { callback: '/signal' })],
-        [bot.inlineButton('ℹ️ Help', { callback: '/help' }), bot.inlineButton('❓ About', { callback: '/about' })]
+        [
+            //bot.inlineButton('💱 Exchanges', { callback: '/exchanges' }), bot.inlineButton('💲 Coins', { callback: '/coins' }),
+            //bot.inlineButton('⏰ Alarm', { callback: '/alarm' }), bot.inlineButton('📢 Signal', { callback: '/signal' }),
+            bot.inlineButton('⚒ Settings', { callback: '/settings' }), bot.inlineButton('❗️ Help', { callback: '/help' }), bot.inlineButton('❓ About', { callback: '/about' })
+        ]
     ]);
-    bot.sendMessage(msg.from.id, '<b>Available commands:</b>', { parseMode: 'HTML', replyMarkup });
-    return bot.sendMessage(msg.from.id, `Hi, <b>${ msg.from.first_name }</b>!`, { parseMode: 'HTML' });
+    return bot.sendMessage(msg.from.id, `Hi, <b>${ msg.from.first_name }</b>!`, { parseMode: 'HTML', replyMarkup }).then(function() {
+        //bot.sendMessage(msg.from.id, '<b>Available commands:</b>', { parseMode: 'HTML', replyMarkup });
+    });
     // return bot.sendMessage(msg.from.id, '😺 Use commands: /alarm, /monitor, /about and /help', { parseMode: 'HTML', replyMarkup });
 });
 
@@ -46,6 +65,11 @@ bot.on(['/help', '/h'], (msg) => {
     return bot.sendMessage(msg.from.id, '<b>Help</b> not implemented yet', { parseMode: 'HTML' });
 });
 
+bot.on(['/settings'], (msg) => {
+    return bot.sendMessage(msg.from.id, '<b>Settings</b> not implemented yet', { parseMode: 'HTML' });
+});
+
+
 bot.on(['/alarm', '/a'], (msg) => {
     return bot.sendMessage(msg.from.id, '<b>Alarm</b> not implemented yet', { parseMode: 'HTML' });
 });
@@ -56,18 +80,22 @@ bot.on(['/signal', '/s'], (msg) => {
 
 bot.on(['/exchanges', '/e'], (msg) => {
     let buttons = [];
-    //console.log(ccxt.exchanges);
-    //ccxt.exchanges.foreach((id) => { console.log(id); });
+    const exchanges = ccxt.exchanges;
+    const exchangeNames = Array.from(ccxt.exchanges, (id) => new ccxt[id]().name);
     const replyMarkup = bot.inlineKeyboard([
         [bot.inlineButton('Bittrex', { callback: '/exchange bittrex' }), bot.inlineButton('Bitfinex', { callback: '/exchange bitfinex' })],
         [bot.inlineButton('Binance', { callback: '/exchange binance' }), bot.inlineButton('GDAX', { callback: '/exchange gdax' })]
     ]);
+    //exchangeNames.forEach((name) => { buttons.push(bot.inlineButton(name, { callback: '/exchange ' + name.toLowerCase() })); });
+    //const replyMarkup = bot.inlineKeyboard([buttons]);
     //var exc = ccxt.exchanges.join(', ');
     //var exc = ccxt.getExchanges(['b']);
     //console.log(exc);
-    return bot.sendMessage(msg.from.id, `<b>Exchanges</b>`, { parseMode: 'HTML', replyMarkup });
+    let exchangesList = Array.from(exchangeNames, (name) => `<code>${name}</code>`).join(', ');
+    return bot.sendMessage(msg.from.id, `<b>Exchanges:</b>\n${exchangesList}`, { parseMode: 'HTML', replyMarkup });
 });
 
+/*
 bot.on(['/coins', '/c'], (msg) => {
     const replyMarkup = bot.inlineKeyboard([
         [bot.inlineButton('Bitcoin', { callback: '/coin BTC' }), bot.inlineButton('Ethereum', { callback: '/coin ETH' })],
@@ -78,7 +106,7 @@ bot.on(['/coins', '/c'], (msg) => {
     coins = '';
     return bot.sendMessage(msg.from.id, `<b>Coins:</b> ${ coins }`, { parseMode: 'HTML', replyMarkup });
 });
-
+*/
 
 bot.on(/^\/exchange (.+)$/, (msg, param) => {
     let id = param.match[1];
@@ -100,11 +128,55 @@ bot.on(/^\/exchange (.+)$/, (msg, param) => {
 
 bot.on(/^\/coin (.+)$/, (msg, param) => {
     const coin = param.match[1];
-    return bot.sendMessage(msg.from.id, `<b>Coin:</b> ${ coin }`, { parseMode: 'HTML' });
+    return bot.sendMessage(msg.from.id, `<b>Coin:</b>\n ${ coin }`, { parseMode: 'HTML' });
 });
 
-bot.on('text', (msg) => msg.reply.text(`📣 ${ msg.text }`));
+
+bot.on(/^\/symbols (.+)$/, async(msg, param) => {
+    let exchangeId = param.match[1].toLowerCase();
+    const exchange = ccxt[exchangeId](); // @TODO: add error handling!
+    await exchange.loadMarkets();
+    const symbols = Array.from(exchange.symbols, (name) => `<code>${name}</code>`).join(', ');
+    return bot.sendMessage(msg.from.id, `<b>Symbols:</b>\n${ symbols }`, { parseMode: 'HTML' });
+});
+
+bot.on(/^\/markets (.+)$/, async(msg, param) => {
+    let exchangeId = param.match[1].toLowerCase();
+    const exchange = ccxt[exchangeId](); // @TODO: add error handling!
+    await exchange.loadMarkets();
+    const markets = Array.from(Object.keys(exchange.markets), (name) => `<code>${name}</code>`).join(', ');
+    return bot.sendMessage(msg.from.id, `<b>Markets:</b>\n${ markets }`, { parseMode: 'HTML' });
+});
+
+bot.on([/^\/currencies (.+)$/, /^\/coins (.+)$/], async(msg, param) => {
+    let exchangeId = param.match[1].toLowerCase();
+    const exchange = ccxt[exchangeId](); // @TODO: add error handling!
+    await exchange.loadMarkets();
+    const currencies = Array.from(exchange.currencies, (name) => `<code>${name}</code>`).join(', ');
+    //console.log(currencies);
+    return bot.sendMessage(msg.from.id, `<b>Currencies:</b>\n${ currencies }`, { parseMode: 'HTML' });
+});
+
+// Button callback
+bot.on('callbackQuery', (msg) => {
+    log.cyan('[BOT]', 'callbackQuery data:', msg.data);
+    bot.answerCallbackQuery(msg.id);
+});
+
+//bot.on('text', (msg) => msg.reply.text(`📣 ${ msg.text }`));
 
 bot.start();
 
-console.log('Bot server started...');
+//console.log('Bot server started...');
+log.yellow('Bot server started');
+
+
+/* 
+Commands:
+exchanges - Exchanges control
+markets - Markets control
+symbols - Symbols control
+coins - Cryptocurrencies control
+alarm - Alarm control
+signal - Signal control
+*/
