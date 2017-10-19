@@ -13,6 +13,7 @@ const TeleBot = require('telebot');
 const ccxt = require('ccxt');
 const log = require('ololog').configure({ locate: false });
 require('ansicolor').nice;
+const db = require('./db');
 
 
 process.on('uncaughtException', e => {
@@ -70,11 +71,11 @@ bot.on(['/settings'], (msg) => {
 });
 
 
-bot.on(['/alarm', '/a'], (msg) => {
+bot.on(['/alarm'], (msg) => {
     return bot.sendMessage(msg.from.id, '<b>Alarm</b> not implemented yet', { parseMode: 'HTML' });
 });
 
-bot.on(['/signal', '/s'], (msg) => {
+bot.on(['/signal'], (msg) => {
     return bot.sendMessage(msg.from.id, '<b>Signal</b> not implemented yet', { parseMode: 'HTML' });
 });
 
@@ -132,7 +133,7 @@ bot.on(/^\/coin (.+)$/, (msg, param) => {
 });
 
 
-bot.on(/^\/symbols (.+)$/, async(msg, param) => {
+bot.on([/^\/symbols (.+)$/, /^\/s (.+)$/], async(msg, param) => {
     let exchangeId = param.match[1].toLowerCase();
     const exchange = ccxt[exchangeId](); // @TODO: add error handling!
     await exchange.loadMarkets();
@@ -140,7 +141,7 @@ bot.on(/^\/symbols (.+)$/, async(msg, param) => {
     return bot.sendMessage(msg.from.id, `<b>Symbols:</b>\n${ symbols }`, { parseMode: 'HTML' });
 });
 
-bot.on(/^\/markets (.+)$/, async(msg, param) => {
+bot.on([/^\/markets (.+)$/, /^\/m (.+)$/], async(msg, param) => {
     let exchangeId = param.match[1].toLowerCase();
     const exchange = ccxt[exchangeId](); // @TODO: add error handling!
     await exchange.loadMarkets();
@@ -153,9 +154,26 @@ bot.on([/^\/currencies (.+)$/, /^\/coins (.+)$/], async(msg, param) => {
     const exchange = ccxt[exchangeId](); // @TODO: add error handling!
     await exchange.loadMarkets();
     const currencies = Array.from(exchange.currencies, (name) => `<code>${name}</code>`).join(', ');
-    //console.log(currencies);
     return bot.sendMessage(msg.from.id, `<b>Currencies:</b>\n${ currencies }`, { parseMode: 'HTML' });
 });
+
+bot.on([/^\/price (.+)$/, /^\/p (.+)$/], async(msg, param) => {
+    let symbol = param.match[1].toUpperCase();
+    if (!symbol.includes('/')) { // Default to BTC if currency was provided instead of pair symbol
+        symbol = symbol.concat('/BTC');
+    }
+    const [fromCurrency, toCurrency] = symbol.split('/');
+    const exchangeId = 'bittrex';
+    //let exchangeId = param.match[1].toLowerCase();
+    const exchange = ccxt[exchangeId](); // @TODO: add error handling!
+    await exchange.loadMarkets();
+    let ticker = await exchange.fetchTicker(symbol);
+    //const currencies = Array.from(exchange.currencies, (name) => `<code>${name}</code>`).join(', ');
+    console.log(ticker);
+    let info = `<b>Symbol:</b> <code>${ticker.symbol}</code>\n<b>Price:</b> ${ticker.last}\n<b>High:</b> ${ticker.high} | <b>Low:</b> ${ticker.low}\n<b>Bid:</b> ${ticker.bid} | <b>Ask:</b> ${ticker.ask}\n<b>Volume:</b> ${ticker.quoteVolume} ${toCurrency}`;
+    return bot.sendMessage(msg.from.id, `${ info }`, { parseMode: 'HTML' });
+});
+
 
 // Button callback
 bot.on('callbackQuery', (msg) => {
@@ -164,19 +182,57 @@ bot.on('callbackQuery', (msg) => {
 });
 
 //bot.on('text', (msg) => msg.reply.text(`📣 ${ msg.text }`));
+bot.on('text', (msg) => { db.users.put(msg.from.id, { first_name: msg.from.first_name, last_name: msg.from.last_name }); });
 
 bot.start();
 
-//console.log('Bot server started...');
-log.yellow('Bot server started');
+log.green('Bot server started');
 
 
-/* 
+/*
+Description:
+/setdescription @CryptoMon_Bot
+@CryptoMon_Bot helps with the tracking of your cryptocurrency investments and making informed buy/sell decisions.
+
+
+About:
+/setabouttext @CryptoMon_Bot
+@CryptoMon_Bot helps tracking of your cryptocurrency investments and making smart, informed buy/sell decisions.
+Follow the price movements and trends using signals, and get informed about key changes by setting alarms.
+Soon the bot will also be able to trade on your behalf so you won't miss on any golden opportunities.
+
+
 Commands:
+/setcommands @CryptoMon_Bot
 exchanges - Exchanges control
 markets - Markets control
 symbols - Symbols control
 coins - Cryptocurrencies control
 alarm - Alarm control
 signal - Signal control
+
+
+TODO:
+(see @MewnBot)
+/p <coin>
+Bittrex: SNRG 
+0.00022314  -1.08% ▼ 
+High|Low: 0.00024062 0.0002156 
+Volume: 5.27 BTC
+
+Yobit: SNRG 
+0.0002528 
+High|Low: 0.0002528 0.00021782 
+Volume: 0.0234919 BTC
+
+Price: $ 5,712.19 2.12▲
+High: $ 5,778.96|Low: $ 5,529.36
+Volume: Ƀ 71,522.9
+Volume: $ 405,935,916.7
+Current Supply: Ƀ 16,622,950
+Marketcap: $ 94.95 B
+24h Change: $ 118.43
+
+/c <coin>
+...chart...
 */

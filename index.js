@@ -1,3 +1,4 @@
-require('./ccxt');
+require('./db');
 require('./bot');
 require('./web');
+require('./ccxt');

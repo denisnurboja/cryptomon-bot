@@ -2,64 +2,25 @@
 
 const ccxt = require('ccxt');
 const table = require('as-table');
+const log = require('ololog').configure({ locate: false });
+require('ansicolor').nice;
 
-//console.log(ccxt.exchanges) // print all available exchanges
+const exchangeList = ['binance', 'bitbay', 'bitfinex', 'bitstamp', 'bittrex', 'cex', 'cryptopia', 'gatecoin', 'gdax', 'kraken', 'poloniex'];
+const exchanges = ccxt.exchanges.filter((id) => exchangeList.includes(id));
+
 let formatPrice = function(price) {
     return typeof price == 'undefined' ? 'N/A' : price;
 };
 
-/*
-async function init() {
-    let exchanges = [];
-    // instantiate all exchanges
-    await Promise.all(ccxt.exchanges.map(async id => { exchanges.push(new(ccxt)[id]()); }))
-}
-init();
-*/
-
-module.exports = {
-    exchangeList: ['bittrex', 'bitfinex', 'binance', 'gdax'],
-    exchanges: {},
-
-    getAllExchanges: function() {
-        //return ccxt.exchanges;
-        /*
-        let exchanges = []
-        // instantiate all exchanges
-        await Promise.all(ccxt.exchanges.map(async id => {
-            let exchange = new(ccxt)[id]()
-            exchanges.push(exchange)
-            await test(exchange, symbol)
-        }));
-        */
-        return ccxt.exchanges;
-    },
-    getExchange: function(id) {
-        if (ccxt.exchanges.indexOf(id) > -1) {
-            let exchange = new(ccxt)[id]();
-            exchange.loadMarkets();
-            //await loadMarkets(exchange);
-        }
-        return exchange;
-    },
-    getExchanges: function(ids) {
-        let exchanges = {};
-        ids.forEach((id) => { exchanges[id] = module.exports.getExchange(id); });
-        return exchanges;
-    },
-    getMarket: function(exchange, symbol) {
-        return symbol;
-    },
-
-    init: function() {
-        //module.exports.exchangeList.forEach(id => { module.exports.exchanges[id] = new(ccxt)[id](); });
-        //let exchanges =
-        //console.log(`Loaded ${module.exports.exchanges.keys} exchanges.`);
-    }
+const loadAllMarkets = async() => {
+    exchangeList.forEach((id) => {
+        let exchange = ccxt[id]();
+        exchange.loadMarkets();
+        log(exchange.name, 'market data loaded.');
+    })
 }
 
-//module.exports.init();
-//const exchanges = ccxt.exchanges;
+
 /*
 const getExchange = function(id) {
   let exchange = new ccxt[id]();
@@ -79,3 +40,33 @@ const getMarketSymbols = async(id) => {
     return symbols;
 }
 */
+
+let getExchange = function(id) {
+    if (ccxt.exchanges.indexOf(id) > -1) {
+        let exchange = new(ccxt)[id]();
+        exchange.loadMarkets();
+        //await loadMarkets(exchange);
+    }
+    return exchange;
+};
+
+let getExchanges = function(ids) {
+    let exchanges = {};
+    ids.forEach((id) => { exchanges[id] = module.exports.getExchange(id); });
+    return exchanges;
+};
+
+let getMarket = function(exchange, symbol) {
+    return symbol;
+};
+
+// Init
+const init = async() => {
+    loadAllMarkets().then(() => { log.green(`Loaded market data from ${ccxt.exchanges.length.toString()} exchanges`) });
+};
+init();
+
+module.exports = {
+    exchanges: exchanges,
+    formatPrice: formatPrice
+};
