@@ -1,10 +1,6 @@
-require('./db');
-require('./bot');
-require('./web');
-require('./ccxt');
-
-// Keepalive hack
-var http = require("http");
-setInterval(function() {
-    http.get("http://cryptomon-bot.herokuapp.com");
-}, 15 * 60000); // every 15 minutes
+const db = require('./db');
+const bot = require('./bot');
+const web = require('./web');
+const ccxt = require('./ccxt');
+const log = require('ololog').configure({ locate: false });
+require('ansicolor').nice;

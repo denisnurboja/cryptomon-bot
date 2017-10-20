@@ -8,15 +8,15 @@ require('ansicolor').nice;
 const exchangeList = ['binance', 'bitbay', 'bitfinex', 'bitstamp', 'bittrex', 'cex', 'cryptopia', 'gatecoin', 'gdax', 'kraken', 'poloniex'];
 const exchanges = ccxt.exchanges.filter((id) => exchangeList.includes(id));
 
-let formatPrice = function(price) {
-    return typeof price == 'undefined' ? 'N/A' : price;
+let formatValue = function(value) {
+    return typeof value == 'undefined' ? 'N/A' : value;
 };
 
 const loadAllMarkets = async() => {
     exchangeList.forEach((id) => {
         let exchange = ccxt[id]();
         exchange.loadMarkets();
-        log(exchange.name, 'market data loaded.');
+        //log.darkGray(exchange.name, 'market data loaded.');
     })
 }
 
@@ -60,13 +60,18 @@ let getMarket = function(exchange, symbol) {
     return symbol;
 };
 
+
 // Init
 const init = async() => {
-    loadAllMarkets().then(() => { log.green(`Loaded market data from ${ccxt.exchanges.length.toString()} exchanges`) });
+    loadAllMarkets().then(() => {
+        log.green(`Loaded market data from ${ccxt.exchanges.length.toString().bright} exchanges`)
+    });
 };
 init();
 
+
+// Exports
 module.exports = {
     exchanges: exchanges,
-    formatPrice: formatPrice
+    formatValue: formatValue
 };

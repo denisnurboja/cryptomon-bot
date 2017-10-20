@@ -33,8 +33,9 @@ const bot = new TeleBot({
         retryTimeout: 5000, // Optional. Reconnecting timeout (in ms).
         proxy: process.env.HTTP_PROXY // Optional. An HTTP proxy to be used.
     },
-    allowedUpdates: [], // Optional. List the types of updates you want your bot to receive. Specify an empty list to receive all updates.
-    usePlugins: ['askUser', 'commandButton'] // Optional. List of built-in plugins.
+    //    allowedUpdates: [], // Optional. List the types of updates you want your bot to receive. Specify an empty list to receive all updates.
+    //    usePlugins: ['askUser', 'commandButton'], // Optional. List of built-in plugins.
+    logging: false
 });
 
 bot.on(['/start'], (msg) => {
@@ -169,7 +170,7 @@ bot.on([/^\/price (.+)$/, /^\/p (.+)$/], async(msg, param) => {
     await exchange.loadMarkets();
     let ticker = await exchange.fetchTicker(symbol);
     //const currencies = Array.from(exchange.currencies, (name) => `<code>${name}</code>`).join(', ');
-    console.log(ticker);
+    //console.log(ticker);
     let info = `<b>Symbol:</b> <code>${ticker.symbol}</code>\n<b>Price:</b> ${ticker.last}\n<b>High:</b> ${ticker.high} | <b>Low:</b> ${ticker.low}\n<b>Bid:</b> ${ticker.bid} | <b>Ask:</b> ${ticker.ask}\n<b>Volume:</b> ${ticker.quoteVolume} ${toCurrency}`;
     return bot.sendMessage(msg.from.id, `${ info }`, { parseMode: 'HTML' });
 });
@@ -182,11 +183,16 @@ bot.on('callbackQuery', (msg) => {
 });
 
 //bot.on('text', (msg) => msg.reply.text(`📣 ${ msg.text }`));
-bot.on('text', (msg) => { db.users.put(msg.from.id, { first_name: msg.from.first_name, last_name: msg.from.last_name }); });
+bot.on(['/userinfo', '/u'], (msg) => {
+    db.users.update(msg.from.id, { first_name: msg.from.first_name, last_name: msg.from.last_name, last_visit: msg.date });
+    let txt = db.users.get(msg.from.id);
+    msg.reply.text(JSON.stringify(txt));
+});
 
+
+// Init
 bot.start();
-
-log.green('Bot server started');
+log.green.bright('Bot server started');
 
 
 /*
