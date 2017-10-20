@@ -4,7 +4,7 @@
 
 const packageInfo = require('./package.json');
 const express = require('express');
-const ccxt = require('ccxt');
+const ccxt = require('./ccxt');
 const log = require('ololog').configure({ locate: false });
 require('ansicolor').nice;
 
@@ -34,13 +34,13 @@ app.get('/exchanges', function(req, res) {
 
 app.get('/exchanges/:exchangeId', function(req, res) {
     let exchangeId = req.params.exchangeId;
-    let exchange = ccxt[exchangeId]();
+    let exchange = ccxt.exchanges[exchangeId]();
     res.json(exchange);
 });
 
 app.get('/exchanges/:exchangeId/markets', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = ccxt[exchangeId]();
+    let exchange = ccxt.exchanges[exchangeId]();
     await exchange.loadMarkets();
     //log.blue(await exchange.fetchTicker('BTC/USD'));
     //log.green(exchange.markets);
@@ -49,37 +49,39 @@ app.get('/exchanges/:exchangeId/markets', async(req, res, next) => {
 
 app.get('/exchanges/:exchangeId/markets/:marketId', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = ccxt[exchangeId]();
+    let exchange = ccxt.exchanges[exchangeId]();
     let marketId = req.params.marketId;
     await exchange.loadMarkets();
-    let market = exchange.marketsById().find(marketId);
+    let markets = await exchange.marketsById(); // Fails!
+    //console.log(markets);
+    let market = markets.find(marketId);
     res.json(market);
 });
 
 app.get('/exchanges/:exchangeId/symbols', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = ccxt[exchangeId]();
+    let exchange = ccxt.exchanges[exchangeId]();
     await exchange.loadMarkets();
     res.json(exchange.symbols);
 });
 
 app.get('/exchanges/:exchangeId/currencies', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = ccxt[exchangeId]();
+    let exchange = ccxt.exchanges[exchangeId]();
     await exchange.loadMarkets();
     res.json(exchange.currencies);
 });
 
 app.get('/exchanges/:exchangeId/ids', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = ccxt[exchangeId]();
+    let exchange = ccxt.exchanges[exchangeId]();
     await exchange.loadMarkets();
     res.json(exchange.ids);
 });
 
 app.get('/exchanges/:exchangeId/tickers', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = ccxt[exchangeId]();
+    let exchange = ccxt.exchanges[exchangeId]();
     await exchange.loadMarkets();
     //let tickers = exchange.fetchTickers(); // Not implemented yet!
     let tickers = [];
@@ -92,7 +94,7 @@ app.get('/exchanges/:exchangeId/tickers', async(req, res, next) => {
 
 app.get('/exchanges/:exchangeId/tickers/:symbolId', async(req, res, next) => {
     let exchangeId = req.params.exchangeId;
-    let exchange = ccxt[exchangeId]();
+    let exchange = ccxt.exchanges[exchangeId]();
     let symbolId = req.params.symbolId;
     await exchange.loadMarkets();
     let ticker = await exchange.fetchTicker(symbolId);
@@ -107,10 +109,10 @@ app.use(function(err, req, res, next) {
 
 
 const PORT = process.env.PORT || 8080;
-const KEEPALIVE_FREQ = (process.env.KEEPALIVE_FREQ || 30); // every 30 minutes
+const KEEPALIVE_FREQ = (process.env.KEEPALIVE_FREQ || 15); // every 15 minutes
 
 const server = app.listen(PORT, function() {
-    const host = 'localhost'; //server.address().address;
+    const host = process.env.HOST || 'cryptomon-bot.herokuapp.com'; //server.address().address;
     const port = server.address().port;
     const url = `http://${host}:${port}`;
     log.green('Web server started at', url.bright);
@@ -118,7 +120,6 @@ const server = app.listen(PORT, function() {
     // Keepalive hack
     const http = require('http');
     setInterval(function() {
-        //http.get("http://cryptomon-bot.herokuapp.com");
         http.get(url);
         log.darkGray('[PING]', 'Keepalive request for', url.bright);
     }, KEEPALIVE_FREQ * 60000);
