@@ -5,5 +5,18 @@
             "last_name": "Christov",
             "last_visit": 1508499759
         }
+    },
+    "watches": {
+        "249180175": {
+            "NEO/BTC": "0.0043:0.0047",
+            "STRAT/BTC": "0.00049:0.00051",
+            "ETH/BTC": "0.048:0.052"
+        }
+    },
+    "settings": {
+        "249180175": {
+            "fiat": "EUR",
+            "coins": "BTC,ETH,NEO,STRAT,DASH"
+        }
     }
 }

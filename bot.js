@@ -38,6 +38,8 @@ const bot = new TeleBot({
     logging: false
 });
 
+
+// General events
 bot.on(['/start'], (msg) => {
     /*  
         // Command keyboard
@@ -50,7 +52,7 @@ bot.on(['/start'], (msg) => {
         [
             //bot.inlineButton('💱 Exchanges', { callback: '/exchanges' }), bot.inlineButton('💲 Coins', { callback: '/coins' }),
             //bot.inlineButton('⏰ Alarm', { callback: '/alarm' }), bot.inlineButton('📢 Signal', { callback: '/signal' }),
-            bot.inlineButton('⚒ Settings', { callback: '/settings' }), bot.inlineButton('❗️ Help', { callback: '/help' }), bot.inlineButton('❓ About', { callback: '/about' })
+            bot.inlineButton('⚒ Settings', { callback: '/set' }), bot.inlineButton('❗️ Help', { callback: '/help' }), bot.inlineButton('❓ About', { callback: '/about' })
         ]
     ]);
     return bot.sendMessage(msg.from.id, `Hi, <b>${ msg.from.first_name }</b>!`, { parseMode: 'HTML', replyMarkup }).then(function() {
@@ -67,19 +69,61 @@ bot.on(['/help', '/h'], (msg) => {
     return bot.sendMessage(msg.from.id, '<b>Help</b> not implemented yet', { parseMode: 'HTML' });
 });
 
-bot.on(['/settings'], (msg) => {
-    return bot.sendMessage(msg.from.id, '<b>Settings</b> not implemented yet', { parseMode: 'HTML' });
+
+// Settings events
+bot.on([/^\/set$/i, /^\/set (.*)$/i], (msg, param) => {
+    let settings = db.settings.get(msg.from.id);
+    if(settings==undefined) {
+        settings = {};
+        db.settings.put(msg.from.id, settings);
+    }
+    let p = param.match[1];
+    let key = '';
+    let value = '';
+    if(p==undefined) {    // show all settings
+        if(Object.keys(settings).length==0) {
+            return bot.sendMessage(msg.from.id, `<b>Settings:</b>\nNo settings exist yet`, { parseMode: 'HTML' });        
+        } else {
+            let strSettings = '';
+            Object.keys(settings).forEach((key) => {strSettings+=`${key} = ${settings[key]}\n`;});
+            return bot.sendMessage(msg.from.id, `<b>Settings:</b>\n${strSettings}`, { parseMode: 'HTML' });
+        }
+    } else if(p.includes('=')) {   // set a value
+        [key, value] = p.split('=');
+        settings[key] = value;
+        db.settings.update(msg.from.id, settings);
+        return bot.sendMessage(msg.from.id, `<b>Settings:</b>\n${key} set to ${value}`, { parseMode: 'HTML' });
+    } else { // show setting value
+        key = p;
+        return bot.sendMessage(msg.from.id, `<b>Settings:</b>\n${key} = ${settings[key]}`, { parseMode: 'HTML' });
+    }
+});
+
+bot.on([/^\/unset$/i, /^\/unset (.*)$/i], (msg, param) => {
+    let settings = db.settings.get(msg.from.id);
+    let p = param.match[1];
+    let key = '';
+    let value = '';
+    if(p==undefined) {    // remove all settings
+        if(Object.keys(settings).length==0) {
+            return bot.sendMessage(msg.from.id, `<b>Settings:</b>\nNo settings exist yet`, { parseMode: 'HTML' });        
+        } else {
+            let strSettings = '';
+            Object.keys(settings).forEach((key) => {strSettings+=`${key} removed\n`;});
+            db.settings.update(msg.from.id, {});
+            return bot.sendMessage(msg.from.id, `<b>Settings:</b>\n${strSettings}`, { parseMode: 'HTML' });
+        }
+    } else { // remove setting value
+        key = p;
+        delete settings[key];
+        db.settings.update(msg.from.id, settings);
+        return bot.sendMessage(msg.from.id, `<b>Settings:</b>\n${key} removed`, { parseMode: 'HTML' });
+    }
 });
 
 
-bot.on(['/alarm'], (msg) => {
-    return bot.sendMessage(msg.from.id, '<b>Alarm</b> not implemented yet', { parseMode: 'HTML' });
-});
 
-bot.on(['/signal'], (msg) => {
-    return bot.sendMessage(msg.from.id, '<b>Signal</b> not implemented yet', { parseMode: 'HTML' });
-});
-
+// Information events
 bot.on(['/exchanges', '/e'], (msg) => {
     let buttons = [];
     const exchanges = ccxt.exchanges;
@@ -199,7 +243,8 @@ function setInterval(func, ms) {
 */
 
 const POLLING_FREQ = (process.env.POLLING_FREQ || 15); // every 15 seconds
-let alerts = [];
+let alerts = new Array();
+/*
 alerts.toString = function() {
     let str = '';
     alerts.forEach((alert) => str+=`${alert.symbol} @ ${alert.threshold}%\n`);
@@ -213,12 +258,66 @@ alerts.add({symbol:'STRAT/BTC', threshold: -10});
 alerts.add({symbol:'NEO/BTC', threshold: 5});
 alerts.add({symbol:'NEO/BTC', threshold: -10});
 console.log(alerts);
+*/
 
-bot.on('/alerts', (msg) => {
-    bot.sendMessage(msg.from.id, alerts.toString(), { parseMode: 'HTML' });
+
+// Watch events
+bot.on([/^\/watch$/i, /^\/w$/i, /^\/watch (.*)$/i, /^\/w (.*)$/i], (msg, param) => {
+    let watches = db.watches.get(msg.from.id);
+    if(watches==undefined) {
+        watches = {};
+        db.watches.put(msg.from.id, watches);
+    }
+    let w = param.match[1];
+    let key = '';
+    let value = '';
+    if(w==undefined) {    // show all watches
+        if(watches==undefined || Object.keys(watches).length==0) {
+            return bot.sendMessage(msg.from.id, `<b>Watches:</b>\nNo watches exist yet`, { parseMode: 'HTML' });        
+        } else {
+            let strWatches = '';
+            Object.keys(watches).forEach((key) => {strWatches+=`${key} = ${watches[key]}\n`;});
+            return bot.sendMessage(msg.from.id, `<b>Watches:</b>\n${strWatches}`, { parseMode: 'HTML' });
+        }
+    } else if(w.includes('=')) {   // set a value
+        [key, value] = w.split('=');
+        key = key.toUpperCase();
+        if (!key.includes('/')) { // Default to BTC if currency was provided instead of pair symbol
+            key = key.concat('/BTC');
+        }
+        watches[key] = value;
+        db.watches.update(msg.from.id, watches);
+        return bot.sendMessage(msg.from.id, `<b>Watches:</b>\n${key} set to ${value}`, { parseMode: 'HTML' });
+    } else { // show setting value
+        key = w.toUpperCase();
+        return bot.sendMessage(msg.from.id, `<b>Watches:</b>\n${key} = ${watches[key]}`, { parseMode: 'HTML' });
+    }
 });
 
-bot.on([/^\/track (.+) (.+)$/, /^\/t (.+) (.+)$/], async(msg, param) => {
+bot.on([/^\/unwatch$/i, /^\/unwatch (.*)$/i], (msg, param) => {
+    let watches = db.watches.get(msg.from.id);
+    let w = param.match[1];
+    let key = '';
+    let value = '';
+    if(w==undefined) {    // remove all watches
+        if(Object.keys(settings).length==0) {
+            return bot.sendMessage(msg.from.id, `<b>Watches:</b>\nNo watches defined yet`, { parseMode: 'HTML' });        
+        } else {
+            let strWatches = '';
+            Object.keys(watches).forEach((key) => {strWatches+=`${key} removed\n`;});
+            db.watches.update(msg.from.id, {});
+            return bot.sendMessage(msg.from.id, `<b>Watches:</b>\n${strWatches}`, { parseMode: 'HTML' });
+        }
+    } else { // remove setting value
+        key = w.toUpperCase();
+        delete watches[key];
+        db.watches.update(msg.from.id, watches);
+        return bot.sendMessage(msg.from.id, `<b>Watches:</b>\n${key} removed`, { parseMode: 'HTML' });
+    }
+});
+
+/*
+bot.on([/^\/watch (.+) (.+)$/, /^\/w (.+) (.+)$/], async(msg, param) => {
     let symbol = param.match[1].toUpperCase();
     if (!symbol.includes('/')) { // Default to BTC if currency was provided instead of pair symbol
         symbol = symbol.concat('/BTC');
@@ -248,10 +347,44 @@ bot.on([/^\/track (.+) (.+)$/, /^\/t (.+) (.+)$/], async(msg, param) => {
         }
      }
  });
+ */
+
 
 // Init
 bot.start();
 log.green.bright('Bot server started');
+
+
+// Watches periodic checker
+async function setWatchTimer() {
+    setInterval(function () { checkChanges(); }, POLLING_FREQ * 1000);
+}
+
+async function checkChanges() {
+    let watches = db.watches.get();
+    Object.keys(watches).forEach((userId) => {
+        Object.keys(watches[userId]).forEach((symbol) => {
+            let val = watches[userId][symbol];
+            let lowVal = 0.0;
+            let highVal = 0.0;
+            [lowVal, highVal] = val.split(':');
+            let exchange = ccxt['binance'](); // TODO: allow other exchanges!
+            //exchange.loadMarkets();
+            let ticker;
+            exchange.fetchTicker(symbol).then(ticker => {
+                if(ticker.last < lowVal) {
+                    bot.sendMessage(userId, `<code>${symbol}</code> latest price ${ticker.last} is below watched level ${lowVal}`, { parseMode: 'HTML' });
+                }
+                if(ticker.last > highVal) {
+                    bot.sendMessage(userId, `<code>${symbol}</code> latest price ${ticker.last} is above watched level ${highVal}`, { parseMode: 'HTML' });
+                }
+                //console.log(ticker);
+            });
+            //console.log(userId, symbol, val, lowVal, highVal);
+        });
+    });
+}
+setWatchTimer();
 
 
 /*

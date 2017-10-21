@@ -123,5 +123,5 @@ const server = app.listen(PORT, function() {
         http.get(url);
         log.darkGray('[PING]', 'Keepalive request for', url.bright);
     }, KEEPALIVE_FREQ * 1000);
-    log.yellow('Setting app keepalive frequency every', KEEPALIVE_FREQ.bright, 'minutes');
+    log.yellow('Setting app keepalive frequency every', KEEPALIVE_FREQ.bright, 'seconds');
 });

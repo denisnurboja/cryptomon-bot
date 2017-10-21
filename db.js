@@ -11,7 +11,12 @@ db.create();
 
 const users = db.table('users');
 users.create();
-//users.put('1', { userId: 1, name: 'Alfonso' });
+
+const watches = db.table('watches');
+watches.create();
+
+const settings = db.table('settings');
+settings.create();
 
 const dbPath = ''.concat(db.dir.path, '/', db.file.path);
 log.green(`Database initialized at ${dbPath.bright}`);
@@ -19,5 +24,7 @@ log.green(`Database initialized at ${dbPath.bright}`);
 
 // Exports
 module.exports = {
-    users: users
+    users: users,
+    watches: watches,
+    settings: settings
 }
