@@ -52,9 +52,8 @@ app.get('/exchanges/:exchangeId/markets/:marketId', async(req, res, next) => {
     let exchange = ccxt.exchanges[exchangeId]();
     let marketId = req.params.marketId;
     await exchange.loadMarkets();
-    let markets = await exchange.marketsById(); // Fails!
-    //console.log(markets);
-    let market = markets.find(marketId);
+    let markets = await exchange.marketsById;
+    let market = markets[marketId];
     res.json(market);
 });
 

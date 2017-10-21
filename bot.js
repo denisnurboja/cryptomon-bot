@@ -27,7 +27,7 @@ process.on('unhandledRejection', e => {
 const bot = new TeleBot({
     token: process.env.TELEGRAM_TOKEN,
     polling: {
-        interval: 1000, // Optional. How often check updates (in ms).
+        interval: 5000, // Optional. How often check updates (in ms).
         timeout: 0, // Optional. Update polling timeout (0 - short polling).
         limit: 100, // Optional. Limits the number of updates to be retrieved.
         retryTimeout: 5000, // Optional. Reconnecting timeout (in ms).
@@ -164,14 +164,15 @@ bot.on([/^\/price (.+)$/, /^\/p (.+)$/], async(msg, param) => {
         symbol = symbol.concat('/BTC');
     }
     const [fromCurrency, toCurrency] = symbol.split('/');
-    const exchangeId = 'bittrex';
+    const exchangeId = 'binance';
     //let exchangeId = param.match[1].toLowerCase();
     const exchange = ccxt[exchangeId](); // @TODO: add error handling!
     await exchange.loadMarkets();
     let ticker = await exchange.fetchTicker(symbol);
     //const currencies = Array.from(exchange.currencies, (name) => `<code>${name}</code>`).join(', ');
     //console.log(ticker);
-    let info = `<b>Symbol:</b> <code>${ticker.symbol}</code>\n<b>Price:</b> ${ticker.last}\n<b>High:</b> ${ticker.high} | <b>Low:</b> ${ticker.low}\n<b>Bid:</b> ${ticker.bid} | <b>Ask:</b> ${ticker.ask}\n<b>Volume:</b> ${ticker.quoteVolume} ${toCurrency}`;
+    let change = ticker.info.priceChangePercent + '%'; //float(ticker.change * 100).toString() + '%';
+    let info = `<b>Symbol:</b> <code>${ticker.symbol}</code>\n<b>Price:</b> ${ticker.last} | <b>Change:</b> ${change}\n<b>High:</b> ${ticker.high} | <b>Low:</b> ${ticker.low}\n<b>Bid:</b> ${ticker.bid} | <b>Ask:</b> ${ticker.ask}\n<b>Volume:</b> ${ticker.quoteVolume} ${toCurrency}`;
     return bot.sendMessage(msg.from.id, `${ info }`, { parseMode: 'HTML' });
 });
 
@@ -189,6 +190,44 @@ bot.on(['/userinfo', '/u'], (msg) => {
     msg.reply.text(JSON.stringify(txt));
 });
 
+//bot.on('tick', async() => { });
+
+/*
+function setInterval(func, ms) {
+    return new Promise(resolve => setInterval(resolve, ms));
+}
+*/
+
+bot.on([/^\/track (.+) (.+)$/, /^\/t (.+) (.+)$/], async(msg, param) => {
+    let symbol = param.match[1].toUpperCase();
+    if (!symbol.includes('/')) { // Default to BTC if currency was provided instead of pair symbol
+        symbol = symbol.concat('/BTC');
+    }
+    const [fromCurrency, toCurrency] = symbol.split('/');    
+    let threshold = parseFloat(param.match[2]);
+    const exchangeId = 'binance';
+    const exchange = ccxt[exchangeId](); 
+    //await exchange.loadMarkets();
+
+    //var promise = Promise.resolve(true);    
+    setInterval(function () {
+         //promise = promise.then(function () {
+         //    return new Promise(function (resolve) {
+                 checkChange();
+         //    });
+         //});
+     }, 5 * 1000);
+     let checkChange = async() => {
+        let ticker = await exchange.fetchTicker(symbol);
+        let change = parseFloat(ticker.change);
+        //log.blue('[TICK]', change, threshold);
+        if(threshold<0 && change<=threshold) {
+            msg.reply.text(`<code>${symbol}</code> change (${change}%) is below threshold ${threshold}%`);
+        } else if(threshold>0 && change>=threshold) {
+            msg.reply.text(`<code>${symbol}</code> change (${change}%) is above threshold ${threshold}%`);
+        }
+     }
+ });
 
 // Init
 bot.start();
