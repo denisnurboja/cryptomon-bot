@@ -108,12 +108,13 @@ app.use(function(err, req, res, next) {
 
 
 const PORT = process.env.PORT || 8080;
-const KEEPALIVE_FREQ = (process.env.KEEPALIVE_FREQ || 15); // every 15 minutes
+const KEEPALIVE_FREQ = (process.env.KEEPALIVE_FREQ || 15 * 60); // every 15 minutes
 
 const server = app.listen(PORT, function() {
-    const host = process.env.HOST || 'cryptomon-bot.herokuapp.com'; //server.address().address;
-    const port = server.address().port;
-    const url = `http://${host}:${port}`;
+    //const host = process.env.HOST || 'cryptomon-bot.herokuapp.com'; //server.address().address;
+    //const port = server.address().port;
+    //const url = `http://${host}:${port}`;
+    const url = `http://cryptomon-bot.herokuapp.com`;
     log.green('Web server started at', url.bright);
 
     // Keepalive hack
@@ -121,6 +122,6 @@ const server = app.listen(PORT, function() {
     setInterval(function() {
         http.get(url);
         log.darkGray('[PING]', 'Keepalive request for', url.bright);
-    }, KEEPALIVE_FREQ * 60000);
+    }, KEEPALIVE_FREQ * 1000);
     log.yellow('Setting app keepalive frequency every', KEEPALIVE_FREQ.bright, 'minutes');
 });

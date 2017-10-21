@@ -198,6 +198,26 @@ function setInterval(func, ms) {
 }
 */
 
+const POLLING_FREQ = (process.env.POLLING_FREQ || 15); // every 15 seconds
+let alerts = [];
+alerts.toString = function() {
+    let str = '';
+    alerts.forEach((alert) => str+=`${alert.symbol} @ ${alert.threshold}%\n`);
+    return str;
+}
+alerts.add = function(alert) {
+    alerts.push(alelrt);
+}
+alerts.add({symbol:'STRAT/BTC', threshold: 5});
+alerts.add({symbol:'STRAT/BTC', threshold: -10});
+alerts.add({symbol:'NEO/BTC', threshold: 5});
+alerts.add({symbol:'NEO/BTC', threshold: -10});
+console.log(alerts);
+
+bot.on('/alerts', (msg) => {
+    bot.sendMessage(msg.from.id, alerts.toString(), { parseMode: 'HTML' });
+});
+
 bot.on([/^\/track (.+) (.+)$/, /^\/t (.+) (.+)$/], async(msg, param) => {
     let symbol = param.match[1].toUpperCase();
     if (!symbol.includes('/')) { // Default to BTC if currency was provided instead of pair symbol
@@ -216,15 +236,15 @@ bot.on([/^\/track (.+) (.+)$/, /^\/t (.+) (.+)$/], async(msg, param) => {
                  checkChange();
          //    });
          //});
-     }, 5 * 1000);
+     }, POLLING_FREQ * 1000);
      let checkChange = async() => {
         let ticker = await exchange.fetchTicker(symbol);
         let change = parseFloat(ticker.change);
         //log.blue('[TICK]', change, threshold);
         if(threshold<0 && change<=threshold) {
-            msg.reply.text(`<code>${symbol}</code> change (${change}%) is below threshold ${threshold}%`);
+            bot.sendMessage(msg.from.id, `<code>${symbol}</code> change (${change}%) is below threshold ${threshold}%`, { parseMode: 'HTML' });
         } else if(threshold>0 && change>=threshold) {
-            msg.reply.text(`<code>${symbol}</code> change (${change}%) is above threshold ${threshold}%`);
+            bot.sendMessage(msg.from.id, `<code>${symbol}</code> change (${change}%) is above threshold ${threshold}%`, { parseMode: 'HTML' });
         }
      }
  });
