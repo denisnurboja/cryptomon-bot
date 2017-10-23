@@ -219,8 +219,8 @@ bot.on([/^\/price (.+)$/i, /^\/p (.+)$/i], async(msg, param) => {
     let symbol = ccxt.getSymbol(param.match[1].toUpperCase());
     const [fromCurrency, toCurrency] = symbol.split('/');
     let settings = db.settings.get(msg.from.id);
-    //let exchanges = (settings.exchanges==undefined ? ccxt.symbols[symbol] : settings.exchanges.split(','));
-    let exchanges = ccxt.symbols[symbol];
+    let exchanges = (settings.exchanges==undefined ? ccxt.symbols[symbol] : settings.exchanges.split(','));
+    //let exchanges = ccxt.symbols[symbol];
     for(let exchangeId of exchanges) {
         const exchange = ccxt.exchanges[exchangeId]();
         //await exchange.loadMarkets();
