@@ -10,7 +10,7 @@
 //    https://www.npmjs.com/package/tgfancy
 
 const TeleBot = require('telebot');
-const ccxt = require('ccxt');
+const ccxt = require('./ccxt');
 const log = require('ololog').configure({ locate: false });
 require('ansicolor').nice;
 const db = require('./db');
@@ -92,7 +92,7 @@ bot.on([/^\/set$/i, /^\/set (.*)$/i], (msg, param) => {
         [key, value] = p.split('=');
         settings[key] = value;
         db.settings.update(msg.from.id, settings);
-        return bot.sendMessage(msg.from.id, `<b>Settings:</b>\n${key} set to ${value}`, { parseMode: 'HTML' });
+        return bot.sendMessage(msg.from.id, `<b>Settings:</b>\n✅${key} set to ${value}`, { parseMode: 'HTML' });
     } else { // show setting value
         key = p;
         return bot.sendMessage(msg.from.id, `<b>Settings:</b>\n${key} = ${settings[key]}`, { parseMode: 'HTML' });
@@ -109,7 +109,7 @@ bot.on([/^\/unset$/i, /^\/unset (.*)$/i], (msg, param) => {
             return bot.sendMessage(msg.from.id, `<b>Settings:</b>\nNo settings exist yet`, { parseMode: 'HTML' });        
         } else {
             let strSettings = '';
-            Object.keys(settings).forEach((key) => {strSettings+=`${key} removed\n`;});
+            Object.keys(settings).forEach((key) => {strSettings+=`❎${key} removed\n`;});
             db.settings.update(msg.from.id, {});
             return bot.sendMessage(msg.from.id, `<b>Settings:</b>\n${strSettings}`, { parseMode: 'HTML' });
         }
@@ -117,7 +117,7 @@ bot.on([/^\/unset$/i, /^\/unset (.*)$/i], (msg, param) => {
         key = p;
         delete settings[key];
         db.settings.update(msg.from.id, settings);
-        return bot.sendMessage(msg.from.id, `<b>Settings:</b>\n${key} removed`, { parseMode: 'HTML' });
+        return bot.sendMessage(msg.from.id, `<b>Settings:</b>\n❎${key} removed`, { parseMode: 'HTML' });
     }
 });
 
@@ -127,7 +127,7 @@ bot.on([/^\/unset$/i, /^\/unset (.*)$/i], (msg, param) => {
 bot.on(['/exchanges', '/e'], (msg) => {
     let buttons = [];
     const exchanges = ccxt.exchanges;
-    const exchangeNames = Array.from(ccxt.exchanges, (id) => new ccxt[id]().name);
+    const exchangeNames = Array.from(ccxt.exchanges, (id) => ccxt.exchanges[id]().name);
     const replyMarkup = bot.inlineKeyboard([
         [bot.inlineButton('Bittrex', { callback: '/exchange bittrex' }), bot.inlineButton('Bitfinex', { callback: '/exchange bitfinex' })],
         [bot.inlineButton('Binance', { callback: '/exchange binance' }), bot.inlineButton('GDAX', { callback: '/exchange gdax' })]
@@ -138,7 +138,7 @@ bot.on(['/exchanges', '/e'], (msg) => {
     //var exc = ccxt.getExchanges(['b']);
     //console.log(exc);
     let exchangesList = Array.from(exchangeNames, (name) => `<code>${name}</code>`).join(', ');
-    return bot.sendMessage(msg.from.id, `<b>Exchanges:</b>\n${exchangesList}`, { parseMode: 'HTML', replyMarkup });
+    return bot.sendMessage(msg.from.id, `<b>Exchanges:</b>\n${exchangesList}`, { parseMode: 'HTML' });
 });
 
 /*
@@ -154,14 +154,11 @@ bot.on(['/coins', '/c'], (msg) => {
 });
 */
 
+/*
 bot.on(/^\/exchange (.+)$/, (msg, param) => {
     let id = param.match[1];
-    /*
-    var exchange = id;
-    let markets = ccxt.getExchange(id).getMarkets();
-    */
-    let exchange = ccxt[id]();
-    exchange.loadMarkets();
+    let exchange = ccxt.exchanges[id]();
+    //exchange.loadMarkets();
     let markets = exchange.markets;
     let marketList = Object.keys(markets);
     //console.log(marketList);
@@ -176,48 +173,62 @@ bot.on(/^\/coin (.+)$/, (msg, param) => {
     const coin = param.match[1];
     return bot.sendMessage(msg.from.id, `<b>Coin:</b>\n ${ coin }`, { parseMode: 'HTML' });
 });
+*/
 
-
-bot.on([/^\/symbols (.+)$/, /^\/s (.+)$/], async(msg, param) => {
+bot.on([/^\/symbols (.+)$/i, /^\/s (.+)$/i], async(msg, param) => {
     let exchangeId = param.match[1].toLowerCase();
-    const exchange = ccxt[exchangeId](); // @TODO: add error handling!
+    const exchange = ccxt.exchanges[exchangeId](); // @TODO: add error handling!
     await exchange.loadMarkets();
     const symbols = Array.from(exchange.symbols, (name) => `<code>${name}</code>`).join(', ');
     return bot.sendMessage(msg.from.id, `<b>Symbols:</b>\n${ symbols }`, { parseMode: 'HTML' });
 });
 
-bot.on([/^\/markets (.+)$/, /^\/m (.+)$/], async(msg, param) => {
+bot.on([/^\/markets (.+)$/i, /^\/m (.+)$/i], async(msg, param) => {
     let exchangeId = param.match[1].toLowerCase();
-    const exchange = ccxt[exchangeId](); // @TODO: add error handling!
+    const exchange = ccxt.exchanges[exchangeId](); // @TODO: add error handling!
     await exchange.loadMarkets();
     const markets = Array.from(Object.keys(exchange.markets), (name) => `<code>${name}</code>`).join(', ');
     return bot.sendMessage(msg.from.id, `<b>Markets:</b>\n${ markets }`, { parseMode: 'HTML' });
 });
 
-bot.on([/^\/currencies (.+)$/, /^\/coins (.+)$/], async(msg, param) => {
+bot.on([/^\/currencies (.+)$/i, /^\/c (.+)$/i], async(msg, param) => {
     let exchangeId = param.match[1].toLowerCase();
-    const exchange = ccxt[exchangeId](); // @TODO: add error handling!
+    const exchange = ccxt.exchanges[exchangeId](); // @TODO: add error handling!
     await exchange.loadMarkets();
     const currencies = Array.from(exchange.currencies, (name) => `<code>${name}</code>`).join(', ');
     return bot.sendMessage(msg.from.id, `<b>Currencies:</b>\n${ currencies }`, { parseMode: 'HTML' });
 });
 
-bot.on([/^\/price (.+)$/, /^\/p (.+)$/], async(msg, param) => {
-    let symbol = param.match[1].toUpperCase();
-    if (!symbol.includes('/')) { // Default to BTC if currency was provided instead of pair symbol
-        symbol = symbol.concat('/BTC');
-    }
+bot.on([/^\/ticker (.+)$/i, /^\/t (.+)$/i], async(msg, param) => {
+    let symbol = ccxt.getSymbol(param.match[1].toUpperCase());
     const [fromCurrency, toCurrency] = symbol.split('/');
-    const exchangeId = 'binance';
-    //let exchangeId = param.match[1].toLowerCase();
-    const exchange = ccxt[exchangeId](); // @TODO: add error handling!
-    await exchange.loadMarkets();
-    let ticker = await exchange.fetchTicker(symbol);
-    //const currencies = Array.from(exchange.currencies, (name) => `<code>${name}</code>`).join(', ');
-    //console.log(ticker);
-    let change = ticker.info.priceChangePercent + '%'; //float(ticker.change * 100).toString() + '%';
-    let info = `<b>Symbol:</b> <code>${ticker.symbol}</code>\n<b>Price:</b> ${ticker.last} | <b>Change:</b> ${change}\n<b>High:</b> ${ticker.high} | <b>Low:</b> ${ticker.low}\n<b>Bid:</b> ${ticker.bid} | <b>Ask:</b> ${ticker.ask}\n<b>Volume:</b> ${ticker.quoteVolume} ${toCurrency}`;
-    return bot.sendMessage(msg.from.id, `${ info }`, { parseMode: 'HTML' });
+    let settings = db.settings.get(msg.from.id);
+    let exchanges = (settings.exchanges==undefined ? ccxt.symbols[symbol] : settings.exchanges.split(','));
+    for(let exchangeId of exchanges) {
+        const exchange = ccxt.exchanges[exchangeId](); // @TODO: add error handling!
+        //await exchange.loadMarkets();
+        let ticker = await exchange.fetchTicker(symbol);
+        let change = ticker.info.priceChangePercent + '%'; //float(ticker.change * 100).toString() + '%';
+        let info = `<code>${ticker.symbol}</code>@<b>${exchange.name}</b>\n<b>Price:</b> ${ticker.last} | <b>Change:</b> ${change}\n<b>High:</b> ${ticker.high} | <b>Low:</b> ${ticker.low}\n<b>Bid:</b> ${ticker.bid} | <b>Ask:</b> ${ticker.ask}\n<b>Volume:</b> ${ticker.quoteVolume} ${toCurrency}`;
+        bot.sendMessage(msg.from.id, `${ info }`, { parseMode: 'HTML' });
+    }
+    return;
+});
+
+bot.on([/^\/price (.+)$/i, /^\/p (.+)$/i], async(msg, param) => {
+    let symbol = ccxt.getSymbol(param.match[1].toUpperCase());
+    const [fromCurrency, toCurrency] = symbol.split('/');
+    let settings = db.settings.get(msg.from.id);
+    //let exchanges = (settings.exchanges==undefined ? ccxt.symbols[symbol] : settings.exchanges.split(','));
+    let exchanges = ccxt.symbols[symbol];
+    for(let exchangeId of exchanges) {
+        const exchange = ccxt.exchanges[exchangeId]();
+        //await exchange.loadMarkets();
+        let ticker = await exchange.fetchTicker(symbol);
+        //let change = ticker.info.priceChangePercent + '%'; //float(ticker.change * 100).toString() + '%';
+        bot.sendMessage(msg.from.id, `<code>${ticker.symbol}</code>@<b>${exchange.name}</b>: ${ticker.last}`, { parseMode: 'HTML' });
+    }
+    return;
 });
 
 
@@ -228,11 +239,13 @@ bot.on('callbackQuery', (msg) => {
 });
 
 //bot.on('text', (msg) => msg.reply.text(`📣 ${ msg.text }`));
+/*
 bot.on(['/userinfo', '/u'], (msg) => {
     db.users.update(msg.from.id, { first_name: msg.from.first_name, last_name: msg.from.last_name, last_visit: msg.date });
     let txt = db.users.get(msg.from.id);
     msg.reply.text(JSON.stringify(txt));
 });
+*/
 
 //bot.on('tick', async() => { });
 
@@ -243,8 +256,8 @@ function setInterval(func, ms) {
 */
 
 const POLLING_FREQ = (process.env.POLLING_FREQ || 15); // every 15 seconds
-let alerts = new Array();
 /*
+let alerts = new Array();
 alerts.toString = function() {
     let str = '';
     alerts.forEach((alert) => str+=`${alert.symbol} @ ${alert.threshold}%\n`);
@@ -368,19 +381,18 @@ async function checkChanges() {
             let lowVal = 0.0;
             let highVal = 0.0;
             [lowVal, highVal] = val.split(':');
-            let exchange = ccxt['binance'](); // TODO: allow other exchanges!
+            let exchangeId = ccxt.symbols[symbol][0];
+            let exchange = ccxt.exchanges[exchangeId]();
             //exchange.loadMarkets();
             let ticker;
             exchange.fetchTicker(symbol).then(ticker => {
                 if(ticker.last < lowVal) {
-                    bot.sendMessage(userId, `<code>${symbol}</code> latest price ${ticker.last} is below watched level ${lowVal}`, { parseMode: 'HTML' });
+                    bot.sendMessage(userId, `⚠<code>${symbol}</code> price ${ticker.last} is below watch level ${lowVal}📉`, { parseMode: 'HTML' });
                 }
                 if(ticker.last > highVal) {
-                    bot.sendMessage(userId, `<code>${symbol}</code> latest price ${ticker.last} is above watched level ${highVal}`, { parseMode: 'HTML' });
+                    bot.sendMessage(userId, `⚠<code>${symbol}</code> price ${ticker.last} is above watch level ${highVal}📈`, { parseMode: 'HTML' });
                 }
-                //console.log(ticker);
             });
-            //console.log(userId, symbol, val, lowVal, highVal);
         });
     });
 }

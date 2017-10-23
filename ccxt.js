@@ -22,8 +22,15 @@ process.on('unhandledRejection', e => {
 });
 
 
-const formatValue = function(value) {
+function formatValue(value) {
     return typeof value == 'undefined' ? 'N/A' : value;
+};
+
+function getSymbol(symbol) {
+    if (!symbol.includes('/')) { // Default to BTC if currency was provided instead of pair symbol
+        symbol = symbol.concat('/BTC');
+    }
+    return symbol;
 };
 
 /*
@@ -42,13 +49,24 @@ const getExchanges = function(ids = exchangeList) {
 const exchanges = getExchanges();
 */
 
+let symbols = [];
+let currencies = {};
 
-const loadMarkets = async(ids = exchangeList) => {
-    ids.forEach((id) => {
+async function loadMarkets(ids = exchangeList) {
+    for(let id of ids) {
         let exchange = ccxt[id]();
-        exchange.loadMarkets();
-        log.darkGray(exchange.name, 'market data loaded.');
-    })
+        await exchange.loadMarkets().then(() => {
+            for(let sym of exchange.symbols) {
+                if(symbols[sym]==undefined)  { symbols[sym] = []; }
+                symbols[sym].push(exchange.id); 
+            }; // Exchanges per symbol
+            for(let cur of exchange.currencies) {
+                if(currencies[cur]==undefined)  { currencies[cur] = []; }
+                currencies[cur].push(exchange.id); 
+            }; // Exchanges per currency
+            log.darkGray(exchange.name, 'market data loaded');
+         });
+    };
 }
 
 /*
@@ -65,9 +83,9 @@ let getMarket = function(exchange, symbol) {
 */
 
 // Init
-const init = async() => {
-    loadMarkets().then(() => {
-        log.green(`Loaded market data from ${exchanges.length.toString().bright} exchanges`)
+async function init() {
+    await loadMarkets().then(() => {
+        log.green(`Loaded market data from ${exchanges.length.toString().bright} exchanges`);
     });
 };
 init();
@@ -76,5 +94,8 @@ init();
 // Exports
 module.exports = {
     exchanges: exchanges,
-    formatValue: formatValue
+    symbols: symbols,
+    currencies: currencies,
+    formatValue: formatValue,
+    getSymbol: getSymbol
 };
