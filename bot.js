@@ -329,6 +329,12 @@ bot.on([/^\/unwatch$/i, /^\/unwatch (.*)$/i], (msg, param) => {
     }
 });
 
+bot.on([/^\/chart (.*)$/i], async(msg, param) => {
+    //let symbol = ccxt.getSymbol(param.match[1].toUpperCase());
+    let exchange = 'binance';
+    let symbol = param.match[1].toUpperCase();
+    return bot.sendPhoto(msg.from.id, `http://cryptomon-bot.herokuapp.com/chart/${exchange}/${symbol}`);
+});
 /*
 bot.on([/^\/watch (.+) (.+)$/, /^\/w (.+) (.+)$/], async(msg, param) => {
     let symbol = param.match[1].toUpperCase();
@@ -400,19 +406,11 @@ setWatchTimer();
 
 
 /*
-Description:
+
+Telegram bot setup:
 /setdescription @CryptoMon_Bot
-@CryptoMon_Bot helps with the tracking of your cryptocurrency investments and making informed buy/sell decisions.
-
-
-About:
 /setabouttext @CryptoMon_Bot
-@CryptoMon_Bot helps tracking of your cryptocurrency investments and making smart, informed buy/sell decisions.
-Follow the price movements and trends using signals, and get informed about key changes by setting alarms.
-Soon the bot will also be able to trade on your behalf so you won't miss on any golden opportunities.
 
-
-Commands:
 /setcommands @CryptoMon_Bot
 exchanges - Exchanges control
 markets - Markets control
@@ -445,4 +443,10 @@ Marketcap: $ 94.95 B
 
 /c <coin>
 ...chart...
+
+TODO:
+/portfolio
+/chart
+/trade
+
 */
